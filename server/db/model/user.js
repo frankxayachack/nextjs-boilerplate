@@ -24,5 +24,12 @@ module.exports = (sequelize, DataTypes) => {
 	User.associate = function(models) {
 		// associations can be defined here
 	};
+
+	User.prototype.comparePassword = async (suppliedPw, actualPw, cb) => {
+		return await bcrypt.compare(suppliedPw, actualPw, (err, isMatch) => {
+			if (err) cb(err);
+			cb(null, isMatch);
+		});
+	};
 	return User;
 };
