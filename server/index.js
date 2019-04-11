@@ -10,12 +10,13 @@ const PORT = process.env.PORT || 3000;
 
 const app = next({ dir: './app', dev });
 const handle = app.getRequestHandler();
-
 const getRoutes = require('./routes');
 const routes = getRoutes();
+const AppRouter = require('./routes/AppRouter');
 
-app
-	.prepare()
+const models = require('./db/model');
+
+app.prepare()
 	.then(() => {
 		const server = express();
 
@@ -31,13 +32,15 @@ app
 		server.use(bodyParser.urlencoded({ extended: true }));
 		server.use(bodyParser.json());
 
+		server.use(AppRouter);
+
 		server.get('*', (req, res) => {
 			const parsedUrl = parse(req.url, true);
 			const { pathname, query = {} } = parsedUrl;
 
 			/**
-         * Pull in front end routes, and check request against those routes
-         */
+			 * Pull in front end routes, and check request against those routes
+			 */
 			const route = routes[pathname];
 			if (route) {
 				return app.render(req, res, route.page, query);
@@ -45,9 +48,11 @@ app
 			handle(req, res);
 		});
 
-		server.listen(PORT, err => {
-			if (err) throw err;
-			console.log('> Server started on port: ', PORT);
+		models.sequelize.sync().then(function() {
+			server.listen(PORT, err => {
+				if (err) throw err;
+				console.log('> Server started on port: ', PORT);
+			});
 		});
 	})
 	.catch(err => {
